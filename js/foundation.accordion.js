@@ -66,42 +66,6 @@ class Accordion extends Plugin {
       this.firstTimeInit = false;
     }
 
-    this._checkDeepLink = () => {
-      var anchor = window.location.hash;
-      //need a hash and a relevant anchor in this tabset
-      if(anchor.length) {
-        var $link = this.$element.find('[href$="'+anchor+'"]'),
-        $anchor = $(anchor);
-
-        if ($link.length && $anchor) {
-          if (!$link.parent('[data-accordion-item]').hasClass('is-active')) {
-            this.down($anchor, this.firstTimeInit);
-            this.firstTimeInit = false;
-          };
-
-          //roll up a little to show the titles
-          if (this.options.deepLinkSmudge) {
-            var _this = this;
-            onLoad($(window), function() {
-              var offset = _this.$element.offset();
-              $('html, body').animate({ scrollTop: offset.top }, _this.options.deepLinkSmudgeDelay);
-            });
-          }
-
-          /**
-            * Fires when the zplugin has deeplinked at pageload
-            * @event Accordion#deeplink
-            */
-          this.$element.trigger('deeplink.zf.accordion', [$link, $anchor]);
-        }
-      }
-    }
-
-    //use browser to open a tab, if it exists in this tabset
-    if (this.options.deepLink) {
-      this._checkDeepLink();
-    }
-
     this._events();
   }
 
@@ -126,15 +90,29 @@ class Accordion extends Plugin {
               _this.toggle($tabContent);
             },
             next: function() {
-              var $a = $elem.next().find('a').focus();
+              var $target = $elem.next().find('a');
+              
+              if (!$target) {
+                  $target = $elem.next().find('[data-accordion-target]')
+              }
+              
+              $target.focus();
+              
               if (!_this.options.multiExpand) {
-                $a.trigger('click.zf.accordion')
+                $target.trigger('click.zf.accordion')
               }
             },
             previous: function() {
-              var $a = $elem.prev().find('a').focus();
+              var $target = $elem.prev().find('a');
+              
+              if (!$target) {
+                  $target = $elem.prev().find('[data-accordion-target]')
+              }
+              
+              $target.focus();
+              
               if (!_this.options.multiExpand) {
-                $a.trigger('click.zf.accordion')
+                $target.trigger('click.zf.accordion')
               }
             },
             handled: function() {
@@ -145,9 +123,6 @@ class Accordion extends Plugin {
         });
       }
     });
-    if(this.options.deepLink) {
-      $(window).on('hashchange', this._checkDeepLink);
-    }
   }
 
   /**
@@ -164,16 +139,6 @@ class Accordion extends Plugin {
       this.up($target);
     } else {
       this.down($target);
-    }
-    //either replace or update browser history
-    if (this.options.deepLink) {
-      var anchor = $target.prev('a').attr('href');
-
-      if (this.options.updateHistory) {
-        history.pushState({}, '', anchor);
-      } else {
-        history.replaceState({}, '', anchor);
-      }
     }
   }
 
@@ -264,9 +229,6 @@ class Accordion extends Plugin {
   _destroy() {
     this.$element.find('[data-tab-content]').stop(true).slideUp(0).css('display', '');
     this.$element.find('a').off('.zf.accordion');
-    if(this.options.deepLink) {
-      $(window).off('hashchange', this._checkDeepLink);
-    }
 
   }
 }
@@ -293,29 +255,6 @@ Accordion.defaults = {
    * @default false
    */
   allowAllClosed: false,
-  /**
-   * Allows the window to scroll to content of pane specified by hash anchor
-   * @option
-   * @type {boolean}
-   * @default false
-   */
-  deepLink: false,
-
-  /**
-   * Adjust the deep link scroll to make sure the top of the accordion panel is visible
-   * @option
-   * @type {boolean}
-   * @default false
-   */
-  deepLinkSmudge: false,
-
-  /**
-   * Animation time (ms) for the deep link adjustment
-   * @option
-   * @type {number}
-   * @default 300
-   */
-  deepLinkSmudgeDelay: 300,
 
   /**
    * Update the browser history with the open accordion
